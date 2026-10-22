@@ -1,6 +1,6 @@
 module github.com/ipenas-cl/leafwise
 
-go 1.27.3
+go 1.27
 
 require (
 	github.com/jackc/pgx/v5 v5.11.0

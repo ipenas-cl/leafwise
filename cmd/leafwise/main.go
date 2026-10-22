@@ -91,24 +91,16 @@ func run(log *slog.Logger) error {
 		log.Info("using s3-compatible photo store", "endpoint", ep)
 	}
 
-	var weather ports.WeatherProvider = &openmeteo.Cached{Next: &openmeteo.Client{BaseURL: os.Getenv("OPEN_METEO_URL")}, TTL: time.Hour}
+	// Decorators: cache (serves stale on error) -> circuit breaker -> HTTP client with retries.
+	var weather ports.WeatherProvider = &openmeteo.Cached{TTL: time.Hour, Next: &openmeteo.Breaker{
+		Failures: 3, Cooldown: time.Minute, Next: &openmeteo.Client{BaseURL: os.Getenv("OPEN_METEO_URL")}}}
 	if env("WEATHER_PROVIDER", "openmeteo") == "static" {
 		weather = openmeteo.Static{}
 	}
 
-	var diag ports.Diagnoser = diagnosis.Mock{}
-	switch p := env("DIAGNOSIS_PROVIDER", "mock"); p {
-	case "openai", "anthropic":
-		base := map[string]string{"openai": "https://api.openai.com/v1", "anthropic": "https://api.anthropic.com/v1"}[p]
-		model := map[string]string{"openai": "gpt-4o-mini", "anthropic": "claude-3-5-haiku-latest"}[p]
-		diag = &diagnosis.LLM{Flavor: diagnosis.Flavor(p), BaseURL: env("LLM_BASE_URL", base),
-			APIKey: os.Getenv("LLM_API_KEY"), Model: env("LLM_MODEL", model)}
-		if os.Getenv("LLM_API_KEY") == "" {
-			return errors.New("LLM_API_KEY is required when DIAGNOSIS_PROVIDER=" + p)
-		}
-	case "mock":
-	default:
-		return errors.New("unknown DIAGNOSIS_PROVIDER " + p)
+	diag, err := buildDiagnoser()
+	if err != nil {
+		return err
 	}
 
 	notifiers := notify.Fanout{notify.Log{L: log}}
@@ -200,4 +192,49 @@ func seed(ctx context.Context, s *app.PlantService) error {
 		time.Sleep(time.Millisecond) // stable created_at ordering
 	}
 	return nil
+}
+
+// buildDiagnoser wires the diagnosis port:
+//
+//	DIAGNOSIS_PROVIDER=onnx       local fine-tuned model via INFERENCE_URL (default when INFERENCE_URL is set)
+//	DIAGNOSIS_PROVIDER=mock       deterministic colour heuristics, no dependencies
+//	DIAGNOSIS_PROVIDER=openai|anthropic   vision LLM only
+//	SECOND_OPINION=openai|anthropic       ask the LLM when the local model is unsure
+func buildDiagnoser() (ports.Diagnoser, error) {
+	def := "mock"
+	if os.Getenv("INFERENCE_URL") != "" {
+		def = "onnx"
+	}
+	var primary ports.Diagnoser
+	switch p := env("DIAGNOSIS_PROVIDER", def); p {
+	case "onnx":
+		primary = &diagnosis.ONNX{URL: env("INFERENCE_URL", "http://localhost:8000")}
+	case "mock":
+		primary = diagnosis.Mock{}
+	case "openai", "anthropic":
+		return llm(p)
+	default:
+		return nil, errors.New("unknown DIAGNOSIS_PROVIDER " + p)
+	}
+	if second := os.Getenv("SECOND_OPINION"); second != "" {
+		l, err := llm(second)
+		if err != nil {
+			return nil, err
+		}
+		return diagnosis.SecondOpinion{Primary: primary, Second: l, Threshold: 0.6}, nil
+	}
+	return primary, nil
+}
+
+func llm(flavor string) (ports.Diagnoser, error) {
+	base := map[string]string{"openai": "https://api.openai.com/v1", "anthropic": "https://api.anthropic.com/v1"}[flavor]
+	model := map[string]string{"openai": "gpt-4o-mini", "anthropic": "claude-3-5-haiku-latest"}[flavor]
+	if base == "" {
+		return nil, errors.New("unknown LLM flavor " + flavor)
+	}
+	if os.Getenv("LLM_API_KEY") == "" {
+		return nil, errors.New("LLM_API_KEY is required for the " + flavor + " diagnoser")
+	}
+	return &diagnosis.LLM{Flavor: diagnosis.Flavor(flavor), BaseURL: env("LLM_BASE_URL", base),
+		APIKey: os.Getenv("LLM_API_KEY"), Model: env("LLM_MODEL", model)}, nil
 }

@@ -54,7 +54,7 @@ func (c *Client) Daily(ctx context.Context, loc domain.Location, from, to time.T
 	}
 	client := c.HTTP
 	if client == nil {
-		client = &http.Client{Timeout: 8 * time.Second}
+		client = &http.Client{Timeout: 5 * time.Second}
 	}
 	var lastErr error
 	for attempt := 0; attempt < 3; attempt++ {

@@ -1,0 +1,22 @@
+{
+  "Tomato___Bacterial_spot": {"condition": "disease", "label": "Bacterial spot", "evidence": "Small dark, water-soaked lesions, often with yellow halos.",
+    "actions": [["now", "Remove spotted leaves and avoid overhead watering."], ["soon", "Apply a copper-based bactericide; rotate crops next season."]]},
+  "Tomato___Early_blight": {"condition": "disease", "label": "Early blight (Alternaria)", "evidence": "Brown lesions with concentric target rings on older leaves.",
+    "actions": [["now", "Prune the lower affected leaves and mulch to stop soil splash."], ["soon", "Apply a chlorothalonil or copper fungicide every 7-10 days."], ["monitor", "Water at the base in the morning."]]},
+  "Tomato___Late_blight": {"condition": "disease", "label": "Late blight (Phytophthora)", "evidence": "Large greasy grey-green patches that spread fast in cool, wet weather.",
+    "actions": [["now", "Remove and bag infected plants; do not compost."], ["now", "Warn neighbours: late blight spreads by wind."], ["soon", "Protect healthy plants with a copper fungicide before rain."]]},
+  "Tomato___Leaf_Mold": {"condition": "disease", "label": "Leaf mold", "evidence": "Pale yellow spots on top, olive-green mould underneath.",
+    "actions": [["now", "Increase airflow and lower humidity; space plants out."], ["soon", "Remove affected leaves; apply a fungicide if it spreads."]]},
+  "Tomato___Septoria_leaf_spot": {"condition": "disease", "label": "Septoria leaf spot", "evidence": "Many small circular spots with dark borders and light centres.",
+    "actions": [["now", "Strip infected lower leaves and mulch the soil."], ["soon", "Apply a fungicide every 7-10 days in wet weather."]]},
+  "Tomato___Spider_mites Two-spotted_spider_mite": {"condition": "pest", "label": "Two-spotted spider mites", "evidence": "Fine stippling and bronzing; webbing on leaf undersides.",
+    "actions": [["now", "Hose leaf undersides with a strong water jet."], ["soon", "Apply insecticidal soap or neem oil every 5 days for two weeks."], ["monitor", "Mites love hot, dry weather: keep plants well watered."]]},
+  "Tomato___Target_Spot": {"condition": "disease", "label": "Target spot (Corynespora)", "evidence": "Brown lesions with light centres and concentric rings, on leaves and fruit.",
+    "actions": [["now", "Remove infected leaves and improve airflow."], ["soon", "Apply a broad-spectrum fungicide."]]},
+  "Tomato___Tomato_Yellow_Leaf_Curl_Virus": {"condition": "disease", "label": "Tomato yellow leaf curl virus", "evidence": "Upward-curling, yellow-edged, stunted leaves; spread by whiteflies.",
+    "actions": [["now", "Remove infected plants; the virus is incurable."], ["soon", "Control whiteflies with yellow sticky traps and insect netting."]]},
+  "Tomato___Tomato_mosaic_virus": {"condition": "disease", "label": "Tomato mosaic virus", "evidence": "Light and dark green mottling, distorted fern-like leaves.",
+    "actions": [["now", "Remove infected plants and disinfect tools and hands."], ["monitor", "Choose ToMV-resistant varieties next season."]]},
+  "Tomato___healthy": {"condition": "healthy", "label": "Healthy tomato leaf", "evidence": "No lesions, mottling or pest damage detected.",
+    "actions": [["monitor", "Keep the current care routine and check again in two weeks."]]}
+}
