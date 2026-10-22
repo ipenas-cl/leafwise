@@ -1,0 +1,81 @@
+# Full stack in demo mode. No API keys needed:
+#   docker compose up --build
+# App:        http://localhost:3000
+# API:        http://localhost:8080/api/plants   (Prometheus metrics on /metrics)
+# Inference:  http://localhost:8000/metadata     (ONNX Runtime leaf-disease model)
+# Mailbox:    http://localhost:8025              (reminder emails land here)
+# MinIO:      http://localhost:9001              (leafwise / leafwise-secret)
+name: leafwise
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: leafwise
+      POSTGRES_PASSWORD: leafwise
+      POSTGRES_DB: leafwise
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U leafwise"]
+      interval: 2s
+      retries: 30
+
+  minio:
+    # MinIO stopped publishing images on Docker Hub in 2025; pgsty/minio is a
+    # maintained drop-in build of the same server.
+    image: pgsty/minio:latest
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: leafwise
+      MINIO_ROOT_PASSWORD: leafwise-secret
+    ports: ["${LEAFWISE_MINIO_PORT:-9001}:9001"]
+    volumes: [miniodata:/data]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 2s
+      retries: 30
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports: ["${LEAFWISE_MAIL_PORT:-8025}:8025"]
+
+  inference:
+    build:
+      context: ./ml
+      dockerfile: serve/Dockerfile
+    ports: ["${LEAFWISE_INFERENCE_PORT:-8000}:8000"]
+
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgres://leafwise:leafwise@postgres:5432/leafwise?sslmode=disable
+      S3_ENDPOINT: minio:9000
+      S3_ACCESS_KEY: leafwise
+      S3_SECRET_KEY: leafwise-secret
+      S3_BUCKET: leafwise-photos
+      SMTP_ADDR: mailpit:1025
+      INFERENCE_URL: http://inference:8000
+      DIAGNOSIS_PROVIDER: ${DIAGNOSIS_PROVIDER:-onnx}
+      SECOND_OPINION: ${SECOND_OPINION:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+      WEATHER_PROVIDER: ${WEATHER_PROVIDER:-openmeteo}
+      REMINDER_INTERVAL: 1m
+      DEMO_SEED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+    ports: ["${LEAFWISE_API_PORT:-8080}:8080"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      minio: { condition: service_healthy }
+      inference: { condition: service_healthy }
+      mailpit: { condition: service_started }
+
+  web:
+    build: ./web
+    ports: ["${LEAFWISE_WEB_PORT:-3000}:80"]
+    depends_on: [api]
+
+volumes:
+  pgdata:
+  miniodata:
