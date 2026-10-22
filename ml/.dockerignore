@@ -1,0 +1,5 @@
+*
+!serve/server.py
+!serve/requirements.txt
+!model/labels.json
+!model/leafwise-mnv3s.onnx
