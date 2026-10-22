@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ipenas-cl/leafwise/api/diagnosis.schema.json",
+  "title": "Plant photo assessment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["summary", "findings", "actions"],
+  "properties": {
+    "summary": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "findings": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["condition", "label", "confidence", "evidence"],
+        "properties": {
+          "condition": {
+            "enum": ["healthy", "pest", "disease", "overwatering", "underwatering", "nutrient_deficiency"]
+          },
+          "label": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "evidence": { "type": "string", "maxLength": 500 }
+        }
+      }
+    },
+    "actions": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["priority", "description"],
+        "properties": {
+          "priority": { "enum": ["now", "soon", "monitor"] },
+          "description": { "type": "string", "minLength": 1, "maxLength": 300 }
+        }
+      }
+    }
+  }
+}

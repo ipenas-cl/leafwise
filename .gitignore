@@ -1,0 +1,6 @@
+/bin/
+/leafwise
+web/node_modules/
+web/dist/
+*.out
+.env
